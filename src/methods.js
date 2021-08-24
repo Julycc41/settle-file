@@ -11,7 +11,7 @@ export const getMatchingList = infos => {
         } else {
           pointsCameraType.map(cameraType => {
             readPoint(cameraType.List).then(result => {
-              resolve(result)
+              filterFile(result)
             })
           })
         }
@@ -21,6 +21,77 @@ export const getMatchingList = infos => {
       })
   })
 }
+
+//图片文件获取对比 将数据的宽高比进行比较
+const filterFile = filterPoints => {
+  filterPoints.map(async item => {
+    const fetchData = item.map(items => exifr.parse(items))
+    await Promise.all(fetchData).then(allData => {
+      console.log(allData)
+      allData.reduce((total, currentValue, currentIndex, ar) => {
+        console.log(total)
+        const itemFilAll = total.filter(itemFile => {
+          if (
+            (itemFile.ExifImageWidth === 640 && itemFile.ExifImageHeight === 512) ||
+            (itemFile.ExifImageWidth === 5184 && itemFile.ExifImageHeight === 3888) ||
+            (itemFile.ExifImageWidth === 8000 && itemFile.ExifImageHeight === 6000) ||
+            (itemFile.ExifImageWidth === 4000 && itemFile.ExifImageHeight === 3000)
+          ) {
+            console.log(itemFile, '筛选出正确的')
+            return itemFile
+          }
+        })
+
+        return itemFilAll
+      }, [])
+    })
+  })
+}
+
+// const filterFile = filterPoints => {
+//   filterPoints.map(async item => {
+//     //比较出相同的数据
+//     const itemArr = await item.filter(async v => {
+//       // const itemFile = await exifr.parse(v)
+//       if (
+//         (exifr.parse(v).ExifImageWidth === 640 && exifr.parse(v).ExifImageHeight === 512) ||
+//         (exifr.parse(v).ExifImageWidth === 5184 && exifr.parse(v).ExifImageHeight === 3888) ||
+//         (exifr.parse(v).ExifImageWidth === 8000 && exifr.parse(v).ExifImageHeight === 6000) ||
+//         (exifr.parse(v).ExifImageWidth === 4000 && exifr.parse(v).ExifImageHeight === 3000)
+//       ) {
+//         console.log(v, '筛选出正确的')
+//         return await v
+//       }
+//     })
+
+//     //比较出错误的图片
+//     const itemErrorArr = await item.filter(async v => {
+//       const itemFile = await exifr.parse(v)
+//       if (
+//         !(
+//           (itemFile.ExifImageWidth === 640 && itemFile.ExifImageHeight === 512) ||
+//           (itemFile.ExifImageWidth === 5184 && itemFile.ExifImageHeight === 3888) ||
+//           (itemFile.ExifImageWidth === 8000 && itemFile.ExifImageHeight === 6000) ||
+//           (itemFile.ExifImageWidth === 4000 && itemFile.ExifImageHeight === 3000)
+//         )
+//       ) {
+//         console.log(v, '筛选出不正确的')
+//         return await v
+//       }
+//     })
+//     console.log(itemErrorArr)
+//     console.log(itemArr)
+//     // if (itemErrorArr.length) {
+//     //   console.log(itemErrorArr);
+//     //   // itemErrorArr.map((item) => (itemFile.errorTitle = "可见光或红外光图片未匹配成功"));
+//     // }
+//     // if (itemArr.length) {
+//     //   console.log(itemArr);
+//     // }
+
+//     return itemArr
+//   })
+// }
 
 const readPoint = async data => {
   let filterPoints = []
