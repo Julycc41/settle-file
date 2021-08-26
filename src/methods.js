@@ -132,3 +132,38 @@ export const changePointsType = arr => {
     }, 10)
   })
 }
+
+export const shiftLIst = [
+  {
+    name: '我是第1位',
+    type: '1'
+  },
+  {
+    name: '我是第2位',
+    type: '2'
+  },
+  {
+    name: '我是第3位',
+    type: '3'
+  },
+  {
+    name: '我是第4位',
+    type: '4'
+  },
+  {
+    name: '我是第5位',
+    type: '5'
+  },
+  {
+    name: '我是第6位',
+    type: '6'
+  },
+  {
+    name: '我是第7位',
+    type: '7'
+  },
+  {
+    name: '我是第8位',
+    type: '8'
+  }
+]
