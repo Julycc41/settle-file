@@ -69,10 +69,9 @@ export async function getPointMatching(
         localList.push(IndexObj)
       }
     }
-
     index++
     indexCount++
-    await matchStatusChange(parseInt(((index / tempInfos.length) * 100).toString()))
+    matchStatusChange(parseInt(((index / tempInfos.length) * 100).toString()))
   }
 
   errorList = getSamePointsList(localList, tempInfos)
