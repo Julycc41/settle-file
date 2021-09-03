@@ -1,6 +1,6 @@
 import './App.css'
+import { Inpussst } from './Inpussst'
 import { getMatchingList } from './methods'
-
 function App() {
   const loadFile = e => {
     const rawFiles = e.target.files
@@ -22,8 +22,10 @@ function App() {
   }
   return (
     <div className="App">
-      上传文件
-      <input type="file" accept="image/*" placeholder="上传你选择的图片" id="image-upload-hidden" onChange={loadFile} multiple />
+      <Inpussst></Inpussst>
+      {/* 上传文件
+      <Inpussst></Inpussst>
+      <input type="file" accept="image/*" placeholder="上传你选择的图片" id="image-upload-hidden" onChange={loadFile} multiple /> */}
     </div>
   )
 }

@@ -11,6 +11,7 @@ export const getMatchingList = infos => {
         } else {
           pointsCameraType.map(cameraType => {
             readPoint(cameraType.List).then(result => {
+              console.log(result)
               filterFile(result)
             })
           })
@@ -22,37 +23,34 @@ export const getMatchingList = infos => {
   })
 }
 const filterFile = async filterPoints => {
-  let itemArr = []
-  let itemErrorArr = []
-  await filterPoints.map(async (item, ind) => {
-    //比较出相同的数据
-    const fetchArr = item.map(s => exifr.parse(s))
-    await Promise.all(fetchArr).then(dataArr => {
+  let listData = { right: [], error: [] }
+  const allData = await filterPoints.map(async (item, ind) => {
+    const fetchArr = await item.map(async s => await exifr.parse(s))
+    return Promise.all(fetchArr)
+  })
+  await Promise.all(allData).then(data => {
+    data.map((item, ind) => {
       const data = []
       const errorData = []
-      dataArr.map((v, index) => {
+      item.map((v, index) => {
         if (
           (v.ExifImageWidth === 640 && v.ExifImageHeight === 512) ||
           (v.ExifImageWidth === 5184 && v.ExifImageHeight === 3888) ||
           (v.ExifImageWidth === 8000 && v.ExifImageHeight === 6000) ||
           (v.ExifImageWidth === 4000 && v.ExifImageHeight === 3000)
         ) {
-          data.push(item[index])
+          data.push(filterPoints[ind][index])
         } else {
           item[index].errorTile = '可见光或红外光图片未匹配成功'
-          errorData.push(item[index])
+          errorData.push(filterPoints[ind][index])
         }
       })
-      itemArr[ind] = data
-      itemErrorArr[ind] = errorData
+      listData.right.push(data)
+      listData.error.push(errorData)
     })
-    console.log(itemArr, itemErrorArr)
-
-    return {
-      itemArr,
-      itemErrorArr
-    }
   })
+  console.log(listData)
+  return listData
 }
 const readPoint = async data => {
   let filterPoints = []
