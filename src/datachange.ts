@@ -28,74 +28,86 @@ export async function getPointMatching(
   currentTask: any,
   getRepetitionPoints: any
 ) {
-  let index = 0
-  let localList: any = [] // 本地与服务器相同的
-  let errorList: any = [] // 不重复相同的
-  let newErrorList: any = [] // 不重复相同的
+  let localList: any[] = [] // 本地与服务器相同的
+  let errorList = [] // 不重复相同的
+  let newErrorList = [] // 不重复相同的
   if (!points) return
   if (!tempInfos) return
   let indexCount = 0
-  //遍历新增
-  while (index < tempInfos.length) {
-    const IndexObj = tempInfos[index]
-    //航线便利匹配
-    for (let i = 0; i < points.length; i++) {
-      const filterArr: any = points[i].waypoints.filter((v: any) =>
-        inGroupRange([+v.longitude, +v.latitude, +v.latitude], [+IndexObj.longitude, +IndexObj.latitude, +IndexObj.latitude])
-      )
+  if (currentPoints.length) {
+    let bigNameOrSort = currentPoints.sort((c: any, d: any) => d.name.split('-')[3] - c.name.split('-')[3])[0].name.split('-')[3]
+    bigNameOrSort = +bigNameOrSort
+    indexCount = bigNameOrSort += 1
+  }
+  //将新增的数据进行遍历
+  const oldData = []
+
+  const fn = async (data: any) => {
+    const item = data[0]
+    points.forEach((el: any) => {
+      const filterArr: any = el.waypoints.filter((v: any) => inGroupRange([+v.longitude, +v.latitude, +v.latitude], [1, 2, 2]))
+
       if (filterArr.length > 0) {
-        //匹配相同时进行赋值重新覆写
-        IndexObj.waypoint_id = filterArr[0].id
-        const infrared_cameraType =
-          IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 13
-            ? 'ZXT2A13'
-            : IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 19
-            ? 'ZXT2A19'
-            : IndexObj.cameraType[0].infrared_cameraType
+        item.waypoint_id = filterArr[0].id
+        const IndexObjCameraType = getIndexObjCameraType(item) //获取当前镜头类型
+        const infrared_cameraType = IndexObjCameraType.infrared_cameraType
+        const light_cameraType = IndexObjCameraType.light_cameraType
 
-        const light_cameraType =
-          IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 13
-            ? 'ZXT2A13'
-            : IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 19
-            ? 'ZXT2A19'
-            : IndexObj.cameraType[0].infrared_cameraType
+        item.lens = infrared_cameraType
+        item.cameraType[0].infrared_cameraType = infrared_cameraType
+        item.cameraType[1].light_cameraType = light_cameraType
+        item.selectType = 'local'
 
-        IndexObj.lens = infrared_cameraType
-        IndexObj.cameraType[0].infrared_cameraType = infrared_cameraType
-        IndexObj.cameraType[1].light_cameraType = light_cameraType
-        IndexObj.selectType = 'local'
+        item.name = `${currentPlant.id}-${currentTask.id}-${filterArr[0].skyway_id}-${indexCount}`
 
-        IndexObj.name = `${currentPlant.id}-${currentTask.id}-${filterArr[0].skyway_id}-${indexCount}`
-        localList.push(IndexObj)
+        localList.push(item) //
       }
-    }
-    index++
-    indexCount++
-    matchStatusChange(parseInt(((index / tempInfos.length) * 100).toString()))
+    })
+    oldData.push(item)
+    console.log(oldData.length, tempInfos.length, oldData.length / (tempInfos.length + oldData.length))
+    matchStatusChange(parseInt(((oldData.length / (tempInfos.length + oldData.length)) * 100).toString()))
+    if (tempInfos.length === 0) return
+    fn(tempInfos.splice(0, 1))
   }
+  await fn(tempInfos.splice(0, 1))
+  // errorList = getSamePointsList(localList, tempInfos)
 
-  errorList = getSamePointsList(localList, tempInfos)
+  // localList = getSameServicePointsList(servicePoints, localList)
 
-  localList = getSameServicePointsList(servicePoints, localList)
+  // let obj: any = {}
 
-  let obj: any = {}
+  // let peon = localList.reduce((cur: any, next: any) => {
+  //   // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+  //   obj[next.name] ? '' : (obj[next.name] = true && cur.push(next))
+  //   return cur
+  // }, []) //设置cur默认类型为数组，并且初始值为空的数组
 
-  let peon = localList.reduce((cur: any, next: any) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    obj[next.name] ? '' : (obj[next.name] = true && cur.push(next))
-    return cur
-  }, []) //设置cur默认类型为数组，并且初始值为空的数组
+  // localList = peon
 
-  localList = peon
+  // if (errorList.length) {
+  //   newErrorList = getErrorList(errorList)
+  // }
+  // getRepetitionPoints({
+  //   //返回数据
+  //   localList,
+  //   newErrorList
+  // })
+}
+export const getIndexObjCameraType = (IndexObj: any) => {
+  const infrared_cameraType =
+    IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 13
+      ? 'ZXT2A13'
+      : IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 19
+      ? 'ZXT2A19'
+      : IndexObj.cameraType[0].infrared_cameraType
 
-  if (errorList.length) {
-    newErrorList = getErrorList(errorList)
-  }
-  getRepetitionPoints({
-    //返回数据
-    localList,
-    newErrorList
-  })
+  const light_cameraType =
+    IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 13
+      ? 'ZXT2A13'
+      : IndexObj.cameraType[0].infrared_cameraType === 'XT2' && IndexObj.focalLength[0].infrared_focalLength === 19
+      ? 'ZXT2A19'
+      : IndexObj.cameraType[0].infrared_cameraType
+  return { infrared_cameraType, light_cameraType }
 }
 
 export const getErrorList = (errorList: any[]) => {

@@ -11,7 +11,6 @@ export const getMatchingList = infos => {
         } else {
           pointsCameraType.map(cameraType => {
             readPoint(cameraType.List).then(result => {
-              console.log(result)
               filterFile(result)
             })
           })
@@ -24,14 +23,16 @@ export const getMatchingList = infos => {
 }
 const filterFile = async filterPoints => {
   let listData = { right: [], error: [] }
-  const allData = await filterPoints.map(async (item, ind) => {
+  const allData = await filterPoints.map(async item => {
     const fetchArr = await item.map(async s => await exifr.parse(s))
     return Promise.all(fetchArr)
   })
   await Promise.all(allData).then(data => {
-    data.map((item, ind) => {
-      const data = []
+    data.map(async (item, ind) => {
+      let sameData = []
+      let sameFetchData = []
       const errorData = []
+
       item.map((v, index) => {
         if (
           (v.ExifImageWidth === 640 && v.ExifImageHeight === 512) ||
@@ -39,17 +40,77 @@ const filterFile = async filterPoints => {
           (v.ExifImageWidth === 8000 && v.ExifImageHeight === 6000) ||
           (v.ExifImageWidth === 4000 && v.ExifImageHeight === 3000)
         ) {
-          data.push(filterPoints[ind][index])
+          sameData.push(filterPoints[ind][index])
+          sameFetchData.push(v)
         } else {
-          item[index].errorTile = '可见光或红外光图片未匹配成功'
+          filterPoints[ind][index].errorTile = '可见光或红外光图片未匹配成功'
           errorData.push(filterPoints[ind][index])
         }
       })
-      listData.right.push(data)
-      listData.error.push(errorData)
+
+      if (sameData.length === 1) {
+        //错误数据
+        sameData.map(item => (item.errorTitle = '可见光或红外光图片未匹配成功'))
+        errorData.push(sameData[0])
+        return
+      }
+
+      if (sameData.length >= 4 && sameData.length % 2 === 0) {
+        //将匹配相同的多余图片进行整合
+        let dataArr = []
+        sameFetchData.map((sameItem, ind) => {
+          if (dataArr.length === 0) {
+            dataArr.push({ width: sameItem.ExifImageWidth, List: [sameData[ind]] })
+          } else {
+            let res = dataArr.some(item => {
+              if (item.width === sameItem.ExifImageWidth) {
+                item.List.push(sameData[ind])
+                return true
+              }
+            })
+            if (!res) {
+              dataArr.push({ width: sameItem.ExifImageWidth, List: [sameData[ind]] })
+            }
+          }
+        })
+        if (dataArr.length === 2) {
+          //多个照片时间和经纬度相重
+          const same1 = dataArr[0].List[0] //读取红外光第一个
+          const same2 = dataArr[1].List[0] //读取可见外光第一个
+          listData.right.push([same1.width > same2.width ? same2 : same1, same1.width > same2.width ? same1 : same2])
+          const itemArrTimeSame = sameData.filter(item => item !== same1 && item !== same2)
+          itemArrTimeSame.map(item => (item.errorTitle = '航点拍摄时间重复'))
+          errorData.push(...itemArrTimeSame.map(item => item))
+          sameData = sameData.filter(item => item.errorTitle !== '航点拍摄时间重复')
+        }
+        // const sames = sameData.map(item => {
+        //   return exifr.parse(item)
+        // })
+        // Promise.all(sames).then(async sameAllData => {
+
+        //   sameAllData.map((sameItem, ind) => {
+
+        //   })
+        //   if (dataArr.length === 2) {
+        //     console.log(dataArr, '时间拍摄重复')
+        //     //多个照片时间和经纬度相重
+        //     const same1 = dataArr[0].List[0] //读取红外光第一个
+        //     const same2 = dataArr[1].List[0] //读取可见外光第一个
+        //     listData.right.push([same1.width > same2.width ? same2 : same1, same1.width > same2.width ? same1 : same2])
+        //     const itemArrTimeSame = sameData.filter(item => item !== same1 && item !== same2)
+        //     itemArrTimeSame.map(item => (item.errorTitle = '航点拍摄时间重复'))
+        //     errorData.push(...itemArrTimeSame.map(item => item))
+        //     console.log(sameData.filter(item => item.errorTitle !== '航点拍摄时间重复'))
+        //     sameData = sameData.filter(item => item.errorTitle !== '航点拍摄时间重复')
+        //   }
+        // })
+      }
+      console.log(sameData, errorData, '相同数据错误数据返回')
+      listData.right.push(sameData)
+      listData.error.push(...errorData)
     })
   })
-  console.log(listData)
+  console.log(listData, '函数返回值')
   return listData
 }
 const readPoint = async data => {
@@ -67,19 +128,21 @@ const readPoint = async data => {
         }
       })
       if (index >= 0) {
+        //查找到相匹配的图片进行返回查找
         let isHas = filterPoints[index].find(v => {
           if (v.name === data[currentIndex].name) {
             return v
           }
         })
         if (!isHas) {
+          //没有查找到则push
           total[index].push(currentValue)
           filterPoints[index].push(data[currentIndex])
         } else {
           console.error('数据重复啦')
         }
       } else {
-        data[currentIndex].errorTitle = '图片时间不匹配'
+        // data[currentIndex].errorTitle = '图片时间不匹配'
         total[total.length] = [currentValue]
         filterPoints.push([data[currentIndex]])
       }
