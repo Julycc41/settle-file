@@ -29,9 +29,9 @@ const filterFile = async filterPoints => {
   })
   await Promise.all(allData).then(data => {
     data.map(async (item, ind) => {
-      let sameData = []
-      let sameFetchData = []
-      const errorData = []
+      let sameData = [] //匹配的文件
+      let sameFetchData = [] //正确匹配到文件
+      const errorData = [] //错误匹配的图片
 
       item.map((v, index) => {
         if (
@@ -169,6 +169,7 @@ export const changePointsType = arr => {
     if (!arr.length) {
       rej([])
     }
+    console.log(arr)
     let dataArr = []
     arr.forEach(async items => {
       const mapItem = await exifr.parse(items)

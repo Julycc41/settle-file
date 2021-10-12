@@ -1,7 +1,6 @@
 import { observer, useObserver } from 'mobx-react-lite'
 import React from 'react'
-import { groupPoints, servicePoints, wayPointGroups } from './data'
-import { getPointMatching } from './datachange'
+import { changePointsType } from './datachange'
 import { apiUrlStore } from './store/apiUrl/apiUrlStore'
 
 export const Inpussst = observer(() => {
@@ -29,13 +28,17 @@ export const Inpussst = observer(() => {
   //结果
   function getRepetitionPoints(repetitionPoints: any) {}
   function aaa() {
-    getPointMatching(wayPointGroups, servicePoints, groupPoints, matchStatusChange, [], 1, 2, getRepetitionPoints)
+    // getPointMatching(wayPointGroups, servicePoints, groupPoints, matchStatusChange, [], 1, 2, getRepetitionPoints)
   }
 
+  const loadFile = (e: any) => {
+    const rawFiles: File[] = e.target.files
+    const infos = Reflect.ownKeys(rawFiles).map((item, index) => rawFiles[index])
+    changePointsType(infos)
+  }
   return useObserver(() => (
     <div className="image-sort-edit-progress" onClick={aaa}>
-      <p onClick={aaa}>处理进度</p>
-
+      <input type="file" accept="image/*" id="image-upload-hidden" onChange={loadFile} multiple placeholder="上传" />
       <p id="all">{aaasss}</p>
     </div>
   ))
